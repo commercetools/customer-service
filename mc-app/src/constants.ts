@@ -33,8 +33,12 @@ declare global {
  *     its own links as `/customer-service/...` and every in-app navigation 404'd,
  *     and the derived permission keys did not match the registration either.
  *
- *  2. `process.env.ENTRY_POINT_URI_PATH` — Node, when custom-application-config.mjs
- *     imports this file at build time. There is no `window` there.
+ *  2. `process.env.ENTRY_POINT_URI_PATH` — Node, under jest. There is no
+ *     `window.app` there.
+ *
+ * custom-application-config.mjs does not import this file: Connect evaluates
+ * that one in its container, where a TypeScript import fails, so it derives
+ * the same permission keys itself. Keep the two in step.
  */
 export const entryPointUriPath =
   (typeof window !== 'undefined' && window.app?.entryPointUriPath) ||

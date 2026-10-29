@@ -4,22 +4,22 @@
  * Freely available, AS IS and UNSUPPORTED. See LICENSE.
  */
 
-import { APP_TITLE, PERMISSIONS, entryPointUriPath } from './src/constants';
-
 /**
- * Customer Service — a project-agnostic Merchant Center Custom Application.
+ * Customer Service — a project-agnostic Merchant Center Custom Application,
+ * deployed through commercetools Connect.
  *
- * Nothing about a particular deployment is hardcoded; it is all supplied by
- * build environment variables so one codebase can be registered against any
- * commercetools project:
+ * Nothing about a particular deployment is hardcoded. Connect supplies every
+ * value below from the deployment's configuration (see connect.yaml):
  *
  *   CUSTOM_APPLICATION_ID   assigned by the Merchant Center on registration
- *   APPLICATION_URL         where this app is served (see REGISTRATION.md)
- *   INITIAL_PROJECT_KEY     project key used by `npm start` in development
- *   ENTRY_POINT_URI_PATH    MC "Application URL path" (see src/constants.ts)
+ *   ENTRY_POINT_URI_PATH    the registration's "Application entry point URI path"
+ *   CLOUD_IDENTIFIER        Merchant Center region, gcp-us / gcp-eu / …
+ *   APPLICATION_URL         where Connect serves this app — Connect sets it
  *   STOREFRONT_B2C_URL      default storefront for "shop as customer"
  *   STOREFRONT_B2B_URL      storefront for B2B customers (defaults to the B2C URL)
  *   CSR_EXTRA_FRAME_SRC     comma-separated extra origins to allow in an iframe
+ *
+ * For `npm run start:dev`, the same names come from `.env`.
  *
  * The storefront URLs are only DEFAULTS: they can be overridden at runtime from
  * the in-app Settings screen, which stores them as a Custom Object. The one
@@ -29,8 +29,45 @@ import { APP_TITLE, PERMISSIONS, entryPointUriPath } from './src/constants';
  * through a single-use Custom Object token; see src/csr-launch.ts and
  * docs/CSR-STOREFRONT-INTEGRATION.md.
  *
- * @type {import('@commercetools-frontend/application-config').ConfigOptionsForCustomApplication}
+ * No imports, deliberately. Connect evaluates this file with Node inside the
+ * deployment container, where importing a source module (`./src/constants`
+ * is TypeScript) fails before the container writes a line of log, and the
+ * deployment reports only "Connector provisioning failed". So the permission
+ * keys are computed here, and src/constants.ts keeps the browser's copy.
  */
+
+const APP_TITLE = 'Customer Service';
+
+/**
+ * Entry point paths are globally unique across every Merchant Center Custom
+ * Application, and the bare `customer-service` is taken — so a registration
+ * uses a namespaced one, `<org>-customer-service`, and every permission key is
+ * derived from it.
+ */
+const entryPointUriPath =
+  process.env.ENTRY_POINT_URI_PATH || 'customer-service';
+
+/**
+ * The Merchant Center's own derivation, from
+ * `@commercetools-frontend/application-config`'s
+ * `entryPointUriPathToPermissionKeys`: `acme-customer-service` →
+ * `ViewAcmeCustomerService`. A key that differs from the one the Merchant
+ * Center computes produces an application that loads and then refuses every
+ * user, so this follows it exactly, numeric segments included.
+ */
+const upperFirst = (word) => word.charAt(0).toUpperCase() + word.slice(1);
+const resourceAccessKey = entryPointUriPath
+  .split('_')
+  .map(upperFirst)
+  .join('_')
+  .split('-')
+  .map((word, i) => (i > 0 && /^\d/.test(word) ? `/${word}` : upperFirst(word)))
+  .join('');
+const PERMISSIONS = {
+  View: `View${resourceAccessKey}`,
+  Manage: `Manage${resourceAccessKey}`,
+};
+
 const storefrontB2cUrl = process.env.STOREFRONT_B2C_URL || '';
 const storefrontB2bUrl = process.env.STOREFRONT_B2B_URL || storefrontB2cUrl;
 
@@ -47,11 +84,11 @@ const originOf = (value) => {
  * flow, and the default appkit CSP is `frame-src 'self'` — which blocks them.
  * Allow exactly the configured storefront origins, nothing wider.
  *
- * This list is COMPILED INTO THE BUNDLE and cannot be changed by the running
- * app. A storefront configured later from the Settings screen will therefore
- * open in a new tab rather than an iframe unless its origin is listed here —
- * add it with CSR_EXTRA_FRAME_SRC and rebuild. The Settings screen surfaces this
- * list and flags any storefront that is not in it.
+ * This list is fixed when the deployment starts and cannot be changed by the
+ * running app. A storefront configured later from the Settings screen therefore
+ * opens in a new tab rather than an iframe unless its origin is listed here —
+ * add it with CSR_EXTRA_FRAME_SRC and redeploy. The Settings screen surfaces
+ * this list and flags any storefront that is not in it.
  */
 const frameSrc = [
   ...new Set(
@@ -67,12 +104,18 @@ const frameSrc = [
   ),
 ];
 
+/**
+ * @type {import('@commercetools-frontend/application-config').ConfigOptionsForCustomApplication}
+ */
 const config = {
   name: APP_TITLE,
   description:
     'CSR workspace: customer 360, orders, returns/refunds, assisted ordering, promotions, lists and cases.',
   entryPointUriPath,
-  cloudIdentifier: 'gcp-us',
+  // Read through process.env rather than `${env:…}` placeholders, which
+  // throw when the variable is absent anywhere in the file — so a placeholder
+  // for a development-only value would stop a deployment from starting.
+  cloudIdentifier: process.env.CLOUD_IDENTIFIER || 'gcp-us',
   env: {
     development: {
       initialProjectKey: process.env.INITIAL_PROJECT_KEY || '',
@@ -80,8 +123,7 @@ const config = {
     production: {
       // Assigned by the Merchant Center on registration — see REGISTRATION.md.
       applicationId: process.env.CUSTOM_APPLICATION_ID || '',
-      // appkit bakes this into <base href> and the CSP self URL, so DNS + SSL
-      // must already resolve for this host before the production build runs.
+      // Connect sets this to the deployment's own URL.
       url: process.env.APPLICATION_URL || '',
     },
   },
@@ -110,9 +152,9 @@ const config = {
   additionalEnv: {
     storefrontB2bUrl,
     storefrontB2cUrl,
-    // The compiled CSP allowlist, so the Settings screen can tell the operator
-    // which storefronts are actually embeddable instead of rendering a blank
-    // iframe and a console CSP violation.
+    // The CSP allowlist, so the Settings screen can tell the operator which
+    // storefronts are actually embeddable instead of rendering a blank iframe
+    // and a console CSP violation.
     frameSrcOrigins: frameSrc,
   },
   // appkit merges these into its computed CSP (and requires connect-src present).

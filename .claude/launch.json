@@ -4,7 +4,7 @@
     {
       "name": "mc-customer-service",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["start"],
+      "runtimeArgs": ["--prefix", "mc-app", "run", "start:dev"],
       "port": 3001
     }
   ]
