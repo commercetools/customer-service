@@ -1,0 +1,47 @@
+deployAs:
+  # The whole connector: a Merchant Center Custom Application. It reaches
+  # commercetools only through the Merchant Center API gateway, as the
+  # signed-in user, so the deployment holds no API Client and no secret.
+  - name: mc-app
+    applicationType: merchant-center-custom-application
+    configuration:
+      standardConfiguration:
+        - key: CUSTOM_APPLICATION_ID
+          description: >-
+            Assigned by the Merchant Center when the Custom Application is
+            registered under Manage organizations & teams > Custom
+            Applications. Register first, with any URL; the deployment
+            refuses to start without a real id.
+          required: true
+        - key: ENTRY_POINT_URI_PATH
+          description: >-
+            The registration's Application entry point URI path. Globally
+            unique across every Merchant Center, and the bare
+            customer-service is taken, so namespace it -
+            acme-customer-service. Must match the registration exactly or the
+            Merchant Center reload-loops.
+          required: true
+        - key: CLOUD_IDENTIFIER
+          description: >-
+            Merchant Center region the app is registered in. gcp-us for
+            Google Cloud Iowa, gcp-eu for Belgium.
+          required: true
+          default: gcp-us
+        - key: STOREFRONT_B2C_URL
+          description: >-
+            Default storefront for "Place order for customer", origin only.
+            Overridable at runtime from the app's Settings screen. Its origin
+            is allowed in the app's frame-src, so it can be embedded.
+          required: false
+        - key: STOREFRONT_B2B_URL
+          description: >-
+            Default storefront for B2B customers, origin only. Falls back to
+            STOREFRONT_B2C_URL.
+          required: false
+        - key: CSR_EXTRA_FRAME_SRC
+          description: >-
+            Comma-separated extra origins the app may embed - any storefront
+            you might pick later from Settings. The frame-src allowlist is
+            fixed when the deployment starts; a storefront missing from it
+            still opens in a new tab.
+          required: false
