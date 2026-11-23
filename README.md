@@ -101,26 +101,6 @@ those — the handshake still succeeds, the token is still redeemed, and the fra
 or bounced. That is what the launch-mode setting is for: `new-tab` always opens a tab, and
 `auto` embeds only when the origin is in the build-time allowlist above.
 
-## Develop locally
-
-```bash
-npm install
-cp .env.example .env   # set INITIAL_PROJECT_KEY at minimum
-npm start              # http://localhost:3001 — log in with your Merchant Center account
-```
-
-Local development requires membership in the `Administrators` team of an Organization that has
-access to the project in `INITIAL_PROJECT_KEY`.
-
-## Quality gates
-
-```bash
-npm run typecheck    # tsc --noEmit
-npm run lint         # eslint .
-npm test             # jest — 51 tests across three suites
-npm run build        # mc-scripts build → public/  (this is the pre-deploy gate)
-```
-
 ## Architecture
 
 - `src/sdk/use-ctp.ts` — low-level REST client over the MC API gateway (`useAsyncDispatch` + `actions`).
@@ -140,8 +120,7 @@ npm run build        # mc-scripts build → public/  (this is the pre-deploy gat
 
 ## Deploy
 
-`npm run build` produces a static SPA in `public/`, servable by any static host. A Netlify
-configuration is included in `netlify.toml` as a worked example. To make it appear in the
+`npm run build` produces a static SPA in `public/`, servable by any static host. To make it appear in the
 Merchant Center, follow [`REGISTRATION.md`](./REGISTRATION.md).
 
 ## License

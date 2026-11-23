@@ -262,18 +262,13 @@ itself:
 
 ## Registration, deployment & configuration
 
-- **Deploy**: static SPA on Netlify (`netlify.toml`) — `npm run build` (mc-scripts) publishes
-  `public/`, with a catch-all SPA rewrite to `index.html`.
+- **Deploy**: static SPA — `npm run build` (mc-scripts) publishes `public/`, which needs a
+  catch-all SPA rewrite to `index.html` on whatever host serves it.
 - **Registration** (`REGISTRATION.md`) is per commercetools project: entry point URI paths are
   globally unique across all commercetools organizations and immutable once set, so each project
   needs a namespaced path (e.g. `<project>-customer-service`) and its own build/deploy when the
   Application ID differs. Two registration paths documented: CLI `mc-scripts config:sync`
   (fails for SSO/employee accounts — verified) or the fully-manual Merchant Center UI flow.
-- **Local dev**: `npm start` (mc-scripts dev server on `:3001`), requires Administrators-team
-  membership in an Organization with access to `INITIAL_PROJECT_KEY`.
-- **Quality gates**: `npm run typecheck` (tsc), `npm run lint` (eslint), `npm test` (jest +
-  `@commercetools-frontend/jest-preset-mc-app`, msw for mocking), `npm run build` (the pre-deploy
-  gate).
 - Config knobs (all build-time, via `custom-application-config.mjs` / `.env`): `INITIAL_PROJECT_KEY`,
   `APPLICATION_URL`, `CUSTOM_APPLICATION_ID`, `ENTRY_POINT_URI_PATH`, `STOREFRONT_B2B_URL`,
   `STOREFRONT_B2C_URL`, `CSR_EXTRA_FRAME_SRC` — all of which are only *defaults*; the storefront
